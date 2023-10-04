@@ -37,7 +37,7 @@ cd newsscraper
 scrapy crawl newsspider -O scraped_data.json
 ```
 
-This will start the scraping process and save the data to an `scraped_data.json` file and the images to a folder named scraped-images.
+This will start the scraping process and save the data to an `scraped_data.json` file.
 
 ## Output
 
