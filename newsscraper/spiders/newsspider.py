@@ -43,21 +43,14 @@ class NewsspiderSpider(scrapy.Spider):
         for title in titles:
             yield{
                 'Title': title.css('h4 ::text').get(),
-                'date' : '',
                 'Url' : "https:://news.google.com" + title.css('a').attrib['href']}
-    
-    
     
     def parse_indian_express(self,response):
         titles = response.css('div.img-context')
         for title in titles:
+            relative_url = title.css('h2 a').attrib['href']
+            yield response.follow(relative_url,callback=self.parse_indianexpress_relative_url)
 
-            yield{
-                'Title':title.css('h2 a::text').get(),
-                'date':title.css('.date::text').get(),
-                'Content':title.css('p::text').get(),
-                'Url':title.css('h2 a').attrib['href']
-            }
         next_page = response.css('a.next.page-numbers').attrib['href']
         if "16" not in next_page:
             next_page_url = next_page + ''
@@ -66,24 +59,58 @@ class NewsspiderSpider(scrapy.Spider):
     
     def parse_india_today(self,response):
         titles = response.css('div.B1S3_content__thumbnail__wrap__iPgcS.content__thumbnail__wrap')
-        load_more = response.css('div.viewall__bnt')
         for title in titles:
-            yield{
-                'Title':title.css('h2 a::text').get(),
-                'Description':title.css('p ::text').get(),
-                'date': '',
-                'Image_url':title.css('img').attrib['src'],
-                'Url':"https://www.indiatoday.in" + title.css('h2 a').attrib['href']
-            }
+            relative_url = "https://www.indiatoday.in" + title.css('h2 a').attrib['href']
+            yield response.follow(relative_url,callback=self.parse_indiatoday_relative_url)
     
     
     def parse_scroll(self,response):
         titles = response.css('li.row-story')
-
         for title in titles:
-            yield{
-                'Title' : title.css('h1 ::text').get(),
-                'Description' : title.css('h2 ::text').get(),
-                'Url' : title.css('a').attrib['href'],
-                'Image_url' : title.css('img').attrib['src']
-            }
+            relative_url = title.css('a').attrib['href']
+            yield response.follow(relative_url,callback=self.parse_scroll_relative_url)
+
+
+
+    def parse_indiatoday_relative_url(self,response):
+        content_path = response.css('div.content__section p')
+        content = ""
+        for text in content_path:
+            content = content + text.css('::text').get()
+        
+        yield{
+            "Url":response.url,
+            "Title": response.css('div.content__section h1::text').get(),
+            "Description":response.css('div.content__section h2::text').get(),
+            "Content":content,
+            "Image_Url":response.css('div.content__section img').attrib['src']
+
+        }
+    def parse_indianexpress_relative_url(self,response):
+        content_path = response.css('div.story-details')
+        content = ""
+        for text in content_path:
+            content = content + text.css('p ::text').get()
+
+        yield{
+            "Url":response.url,
+            "Title":response.css('div.heading-part h1::text').get(),
+            "Description":response.css('div.heading-part h2::text').get(),
+            "Content":content,
+            "Image_Url":response.css('div.story-details img').attrib['src']
+        }
+    
+    
+    def parse_scroll_relative_url(self,response):
+        content_path = response.xpath("//*[@id='article-contents']/p")
+        content = ""
+        for text in content_path:
+            content = content + text.css("::text").get()
+        
+        yield{
+            "Url":response.url,
+            "Title" : response.css('div.main-container h1::text').get(),
+            "Description" : response.css('div.main-container h2::text').get(),
+            "Content": content,
+            "Image_Url":response.css("div.main-container img").attrib['src']
+        }
